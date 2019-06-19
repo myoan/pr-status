@@ -1,0 +1,54 @@
+version: 2.1
+description: Github PR create-a-status API (https://developer.github.com/v3/repos/statuses/#create-a-status)
+
+executors:
+  curl:
+    parameters:
+    working_directory: ~/workspace
+    docker:
+      - image: byrnedo/alpine-curl
+
+commands:
+  create_a_status:
+    description: "create PR status"
+    parameters:
+      owner:
+        description: "github project username"
+        type: string
+        default: $CIRCLE_PROJECT_USERNAME
+      repo:
+        description: "github project reponame"
+        type: string
+        default: $CIRCLE_PROJECT_REPONAME
+      github_token:
+        description: "github access token"
+        type: string
+        default: ""
+      sha:
+        description: "git commit hash"
+        type: string
+        default: $CIRCLE_SHA1
+      status:
+        description: "API parameter: status"
+        type: enum
+        enum: ["error", "failure", "pending", "success"]
+        default: "failure"
+      target_url:
+        description: "API parameter: target_url"
+        type: string
+        default: ""
+      description:
+        description: "API parameter: description"
+        type: string
+        default: "description"
+      context:
+        description: "API parameter: context"
+        type: string
+        default: "default"
+    steps:
+      - run: |
+          CONTENT_TYPE_H='Content-Type:application/json'
+          AUTH_H='Authorization: token << parameters.github_token >>'
+          DATA='{"state":"<< parameters.status >>","target_url":"<< parameters.target_url >>","description":"<< parameters.description >>","context":"<< parameters.context >>"}'
+          echo $DATA
+          curl -H "$CONTENT_TYPE_H" -H "$AUTH_H" -d "$DATA" -X POST https://api.github.com/repos/<< parameters.owner >>/<< parameters.repo >>/statuses/<< parameters.sha >>
